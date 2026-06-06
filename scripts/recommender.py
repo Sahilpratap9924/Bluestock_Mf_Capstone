@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -31,9 +32,14 @@ if not logger.handlers:
     logger.setLevel(logging.INFO)
 
 
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_SCORECARD_PATH = ROOT / "data" / "processed" / "fund_scorecard.csv"
+DEFAULT_MASTER_PATH = ROOT / "data" / "raw" / "01_fund_master.csv"
+
+
 def load_data(
-    scorecard_path: str = "../data/processed/fund_scorecard.csv",
-    master_path: str = "../data/raw/01_fund_master.csv",
+    scorecard_path: Optional[Union[str, Path]] = None,
+    master_path: Optional[Union[str, Path]] = None,
 ) -> pd.DataFrame:
     """Load and merge the fund scorecard and master metadata.
 
@@ -49,6 +55,11 @@ def load_data(
     pandas.DataFrame
         Merged DataFrame on column ``amfi_code``.
     """
+    if scorecard_path is None:
+        scorecard_path = DEFAULT_SCORECARD_PATH
+    if master_path is None:
+        master_path = DEFAULT_MASTER_PATH
+
     scorecard = pd.read_csv(scorecard_path)
     master = pd.read_csv(master_path)
     merged = scorecard.merge(master, on="amfi_code")
@@ -69,7 +80,7 @@ def recommend(df: pd.DataFrame, risk: str, top_n: int = 3) -> pd.DataFrame:
     return result[["scheme_name", "risk_category", "sharpe_ratio"]]
 
 
-def save_recommendations(df: pd.DataFrame, risk: str, output_path: str, top_n: int = 3) -> str:
+def save_recommendations(df: pd.DataFrame, risk: str, output_path: Union[str, Path], top_n: int = 3) -> str:
     """Compute recommendations and save to CSV.
 
     Parameters
@@ -88,10 +99,11 @@ def save_recommendations(df: pd.DataFrame, risk: str, output_path: str, top_n: i
     str
         The absolute path to the written file.
     """
+    output_path = Path(output_path)
     recommendations = recommend(df, risk, top_n=top_n)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     recommendations.to_csv(output_path, index=False)
-    abs_path = os.path.abspath(output_path)
+    abs_path = str(output_path.resolve())
     logger.info("Saved recommendations to %s", abs_path)
     return abs_path
 
@@ -99,5 +111,5 @@ def save_recommendations(df: pd.DataFrame, risk: str, output_path: str, top_n: i
 if __name__ == "__main__":
     # Basic CLI behavior when executed directly
     df = load_data()
-    out = save_recommendations(df, "High", os.path.join("scripts", "recommendations_high.csv"))
+    out = save_recommendations(df, "High", ROOT / "scripts" / "recommendations_high.csv")
     logger.info("Completed main run; output=%s", out)

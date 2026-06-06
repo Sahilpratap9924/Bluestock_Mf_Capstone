@@ -55,6 +55,8 @@ Bluestock MF Capstone is a reproducible analysis and reporting project for mutua
     python run_pipeline.py
     ```
 
+- To deploy the ETL pipeline as a scheduled task on Windows, use `scripts/setup_etl_schedule.ps1` with an mfapi.in URL.
+
 - Option C — Execute notebooks non-interactively:
   - Install `papermill` or use `jupyter nbconvert --execute` to run notebooks end-to-end. Example with `nbconvert`:
 
